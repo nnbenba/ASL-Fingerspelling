@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignSpeak - ASL Fingerspelling Recognition</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200;12..96,400;12..96,600;12..96,800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #FF6B35;
+            --secondary: #F7931E;
+            --accent: #C1292E;
+            --dark: #161925;
+            --light: #F1F2F6;
+            --success: #00D9A3;
+            --glow: #FFD23F;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background shapes */
+        .bg-shape {
+            position: fixed;
+            border-radius: 50%;
+            opacity: 0.1;
+            animation: float 20s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        .bg-shape:nth-child(1) {
+            width: 400px;
+            height: 400px;
+            background: var(--glow);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .bg-shape:nth-child(2) {
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            top: 50%;
+            right: -150px;
+            animation-delay: 5s;
+        }
+
+        .bg-shape:nth-child(3) {
+            width: 500px;
+            height: 500px;
+            background: var(--success);
+            bottom: -200px;
+            left: 30%;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        /* Header */
+        header {
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .hand-icon {
+            font-size: 3rem;
+            animation: wave 2s ease-in-out infinite;
+            transform-origin: 70% 70%;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-20deg); }
+            75% { transform: rotate(20deg); }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            letter-spacing: -2px;
+        }
+
+        .tagline {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            font-weight: 400;
+            margin-top: 0.5rem;
+        }
+
+        /* Main Container */
+        .main-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .app-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 3rem;
+            animation: fadeUp 1s ease-out 0.3s both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Upload Section */
+        .upload-area {
+            background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%);
+            border: 3px dashed rgba(118, 75, 162, 0.3);
+            border-radius: 25px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upload-area:hover {
+            border-color: rgba(118, 75, 162, 0.5);
+            transform: scale(1.02);
+            background: linear-gradient(135deg, #667eea33 0%, #764ba233 100%);
+        }
+
+        .upload-area.dragging {
+            background: linear-gradient(135deg, #667eea44 0%, #764ba244 100%);
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            opacity: 0.7;
+            transform: translateY(-5px);
+        }
+
+        .upload-text {
+            color: var(--dark);
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            color: var(--dark);
+            opacity: 0.6;
+            font-size: 1rem;
+        }
+
+        /* Hidden file input */
+        #fileInput {
+            display: none;
+        }
+
+        /* Image Preview */
+        .preview-container {
+            display: none;
+            margin-top: 2rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .preview-container.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .preview-image {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin: 0 auto;
+            display: block;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 50px;
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Result Display */
+        .result-container {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea11 0%, #764ba211 100%);
+            border-radius: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .result-container.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-letter {
+            font-size: 6rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-align: center;
+            margin: 1rem 0;
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 50px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--glow));
+            border-radius: 50px;
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 1rem;
+            color: white;
+            font-weight: 600;
+            font-family: 'DM Mono', monospace;
+        }
+
+        /* Alphabet Reference */
+        .alphabet-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid rgba(0,0,0,0.1);
+        }
+
+        .alphabet-title {
+            text-align: center;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .alphabet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+            gap: 0.5rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .letter-card {
+            aspect-ratio: 1;
+            background: white;
+            border: 2px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .letter-card:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .letter-card.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-color: var(--primary);
+            animation: pulse 1s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Instructions */
+        .instructions {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .instructions h3 {
+            color: var(--dark);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .instruction-list {
+            list-style: none;
+        }
+
+        .instruction-list li {
+            padding: 0.5rem 0;
+            padding-left: 2rem;
+            position: relative;
+            color: var(--dark);
+            opacity: 0.8;
+        }
+
+        .instruction-list li::before {
+            content: '✋';
+            position: absolute;
+            left: 0;
+            top: 0.5rem;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+            display: none;
+        }
+
+        .loader.show {
+            display: block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .app-card {
+                padding: 2rem 1.5rem;
+            }
+            
+            .upload-area {
+                padding: 2rem;
+            }
+            
+            .result-letter {
+                font-size: 4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background Shapes -->
+    <div class="bg-shape"></div>
+    <div class="bg-shape"></div>
+    <div class="bg-shape"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <span class="hand-icon">👋</span>
+            <h1>SignSpeak</h1>
+        </div>
+        <p class="tagline">AI-Powered ASL Fingerspelling Recognition</p>
+    </header>
+
+    <!-- Main Application -->
+    <div class="main-container">
+        <div class="app-card">
+            <!-- Upload Area -->
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p class="upload-text">Drop image here or click to upload</p>
+                <p class="upload-subtext">Supports JPG, PNG, GIF (Max 10MB)</p>
+            </div>
+
+            <!-- Hidden file input -->
+            <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+
+            <!-- Preview Container -->
+            <div id="previewContainer" class="preview-container">
+                <img id="imagePreview" class="preview-image" alt="Preview">
+            </div>
+
+            <!-- Buttons -->
+            <div class="btn-group">
+                <button id="predictBtn" class="btn btn-primary" onclick="predictImage()" disabled>
+                    Predict Sign
+                </button>
+                <button id="clearBtn" class="btn btn-secondary" onclick="clearImage()" style="display:none;">
+                    Clear Image
+                </button>
+            </div>
+
+            <!-- Results Display -->
+            <div id="resultContainer" class="result-container">
+                <h3 style="text-align: center; color: var(--dark); margin-bottom: 1rem;">Recognition Result</h3>
+                <div class="result-letter" id="resultLetter">-</div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidenceBar" style="width: 0%">0%</div>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div class="loader" id="loader"></div>
+
+            <!-- Alphabet Reference -->
+            <div class="alphabet-section">
+                <h3 class="alphabet-title">ASL Alphabet Reference</h3>
+                <div class="alphabet-grid" id="alphabetGrid"></div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="instructions">
+                <h3>How to Use</h3>
+                <ul class="instruction-list">
+                    <li>Upload a clear image of an ASL fingerspelling sign</li>
+                    <li>Ensure the hand is clearly visible against a plain background</li>
+                    <li>The image should show a single letter sign (A-Z)</li>
+                    <li>Click "Predict Sign" to see the AI's recognition</li>
+                    <li>View confidence score to see how certain the AI is</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // Initialize alphabet grid
+        function initAlphabetGrid() {
+            const grid = document.getElementById('alphabetGrid');
+            for (let i = 65; i <= 90; i++) {
+                const letter = String.fromCharCode(i);
+                const card = document.createElement('div');
+                card.className = 'letter-card';
+                card.textContent = letter;
+                card.onclick = () => highlightLetter(letter);
+                grid.appendChild(card);
+            }
+        }
+
+        // Drag and drop handlers
+        const uploadArea = document.getElementById('uploadArea');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragging');
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                handleFile(files[0]);
+            }
+        });
+
+        // File selection handler
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFile(file);
+            }
+        }
+
+        // Process selected file
+        function handleFile(file) {
+            // Check file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size must be less than 10MB');
+                return;
+            }
+
+            selectedFile = file;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('imagePreview');
+                const previewContainer = document.getElementById('previewContainer');
+                preview.src = e.target.result;
+                previewContainer.classList.add('show');
+                
+                // Hide upload area and show clear button
+                uploadArea.style.display = 'none';
+                document.getElementById('predictBtn').disabled = false;
+                document.getElementById('clearBtn').style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Clear selected image
+        function clearImage() {
+            selectedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('previewContainer').classList.remove('show');
+            document.getElementById('uploadArea').style.display = 'flex';
+            document.getElementById('predictBtn').disabled = true;
+            document.getElementById('clearBtn').style.display = 'none';
+            document.getElementById('resultContainer').classList.remove('show');
+        }
+
+        // Predict image
+        async function predictImage() {
+            if (!selectedFile) {
+                alert('Please select an image first');
+                return;
+            }
+
+            const loader = document.getElementById('loader');
+            const resultContainer = document.getElementById('resultContainer');
+            
+            loader.classList.add('show');
+            resultContainer.classList.remove('show');
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    alert('Error: ' + result.error);
+                } else {
+                    displayResult(result);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to get prediction. Please try again.');
+            } finally {
+                loader.classList.remove('show');
+            }
+        }
+
+        // Display prediction result
+        function displayResult(result) {
+            const resultContainer = document.getElementById('resultContainer');
+            const resultLetter = document.getElementById('resultLetter');
+            const confidenceBar = document.getElementById('confidenceBar');
+            
+            resultLetter.textContent = result.label;
+            const confidencePercent = (result.confidence * 100).toFixed(1);
+            
+            // Animate confidence bar
+            setTimeout(() => {
+                confidenceBar.style.width = `${confidencePercent}%`;
+                confidenceBar.textContent = `${confidencePercent}%`;
+            }, 100);
+            
+            resultContainer.classList.add('show');
+            
+            // Highlight letter in reference grid
+            highlightLetter(result.label);
+        }
+
+        // Highlight letter in alphabet grid
+        function highlightLetter(letter) {
+            document.querySelectorAll('.letter-card').forEach(card => {
+                card.classList.remove('active');
+                if (card.textContent === letter) {
+                    card.classList.add('active');
+                    // Scroll to the letter if needed
+                    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            initAlphabetGrid();
+        };
+    </script>
+</body>
+</html>
